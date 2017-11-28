@@ -6,7 +6,8 @@ const TaskSchema = new mongoose.Schema({
   q: { type: String, required: true },
   a: String,
   level: { type: Number, required: true },
-  img: String
+  img: String,
+  source: String
 });
 
 const LexemeSchema = new mongoose.Schema({
@@ -18,23 +19,12 @@ const LexemeSchema = new mongoose.Schema({
 
 LexemeSchema.method('update', function(updates, callback) {
   const { _id: _, ...rest } = updates; // ignore ID
-  const tasks = [].concat(this.tasks).concat(updates.tasks);
-
-  // loop through tasks – not very clean because private API
-  // - if same id  –> only keep last one
-  // - if q == "-" –> delete
-  const filteredTasks = tasks.filter( (task, index) => {
-    if (task.q === '-') return false;
-    let returnVal = true;
-    console.log('task #'+ index +': ' + task._id);
-    for (let i = index+1; i<tasks.length; i++) { // go throught tasks after this
-      console.log(tasks[i]._id);
-      if (task._id == tasks[i]._id) returnVal = false;
-      console.log(returnVal);
-    }
-    return returnVal;
-  });
-
+  const tasks = [...this.tasks, ...updates.tasks];
+  const filteredTasks = tasks // loop through tasks (private API)
+    .filter( ({ q }) =>  q !== '-' ) // - if q === "-" –> delete
+    .filter( ({ _id: id }, index, arr) => { // - if same id  –> only keep last one
+      return index >= arr.map( el => String(el._id) ).lastIndexOf(String(id));
+    })
   Object.assign(this, rest, { tasks: filteredTasks }, { updatedAt: Date.now() } );
   this.save(callback);
 });

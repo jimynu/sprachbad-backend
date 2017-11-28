@@ -40,12 +40,8 @@ router.get( '/:id/lexemes',
     // get list of IDs of user's words
     User.findById( req.user._id )
       .then( user => {
-        return user.lexemes.map( lexeme => lexeme.lexeme_id )
-      })
-      .then( ids => {
+        const ids = user.lexemes.map( lexeme => lexeme.lexeme_id )
         console.log(ids);
-        // thou shalt take a break when ur brain is running in circles.
-        // i have now an array with lexeme IDs –> populate?
       })
       .catch( error => next(error) );
 });
