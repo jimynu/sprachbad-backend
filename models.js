@@ -7,7 +7,7 @@ const TaskSchema = new mongoose.Schema({
   a: String,
   level: { type: Number, required: true },
   img: String,
-  source: String
+  source: String,
 });
 
 const LexemeSchema = new mongoose.Schema({
@@ -31,20 +31,22 @@ LexemeSchema.method('update', function(updates, callback) {
 
 
 
+
+const UserLexemeSchema = new mongoose.Schema({
+  lexeme: { type: mongoose.Schema.Types.ObjectId, ref: 'Lexeme' },
+  times_right: { type: Number, default: 0 },
+  times_wrong: { type: Number, default: 0 },
+  progress: { type: Number, default: 0 },
+  last_learnt: Date
+});
+
 const UserSchema = new mongoose.Schema({
   name: { type: String, required: true },
   level: { type: Number, default: 10 },
   newbie: { type: Boolean, default: true },
   createdAt: { type: Date, default: Date.now },
   updatedAt: Date,
-  lexemes: [
-    {
-      lexeme_id: String,
-      times_right: { type: Number, default: 0 },
-      times_wrong: { type: Number, default: 0 },
-      mastery: { type: Number, default: 0 }
-    }
-  ]
+  lexemes: [ UserLexemeSchema ]
 });
 
 UserSchema.method('update', function(updates, callback) {
@@ -53,6 +55,17 @@ UserSchema.method('update', function(updates, callback) {
   this.save(callback);
 });
 
+
+UserSchema.method('updateProgress', function(update, callback) {
+  const lexemes = [...this.lexemes].map( lexeme => {
+    if ( String(lexeme.id) === String(update.id) ) {
+      update.last_learnt = Date.now();
+      return update;
+    } else return lexeme;
+  });
+  Object.assign(this, { lexemes } );
+  this.save(callback);
+});
 
 
 // create collections
