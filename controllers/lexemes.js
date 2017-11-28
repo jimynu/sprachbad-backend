@@ -19,7 +19,7 @@ router.param( 'id', (req, res, next, id) => {
 
 
 // get all lexemes (for now), full data (–> editing)
-router.get( '/full', (req, res, next) => {
+router.get( '/', (req, res, next) => {
   Lexeme.find({})
     .then( lexemes => res.json(lexemes) )
     .catch( error => next(error) );
@@ -27,7 +27,7 @@ router.get( '/full', (req, res, next) => {
 
 
 // get all lexemes (for now), just lexeme + id (–> selecting)
-router.get( '/', (req, res, next) => {
+router.get( '/summary', (req, res, next) => {
   Lexeme.find({}, 'lexeme' ) // get only "lexeme" field and "id" (always there)
     .then( lexemes => res.json(lexemes) )
     .catch( error => next(error) );
@@ -63,10 +63,10 @@ router.post( '/',
   },
 
   (req, res, next) => {
-    const newLexeme = new Lexeme({
-      lexeme: req.body.lexeme,
-      tasks: req.body.tasks
-    })
+
+    const { lexeme, tasks } = req.body;
+    const newLexeme = new Lexeme({ lexeme, tasks })
+
     newLexeme.save()
       .then( () => res.json(newLexeme) )
       .catch( error => next(error) );
