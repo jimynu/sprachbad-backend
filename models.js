@@ -32,21 +32,19 @@ LexemeSchema.method('update', function(updates, callback) {
 
 
 
-const UserLexemeSchema = new mongoose.Schema({
-  lexeme: { type: mongoose.Schema.Types.ObjectId, ref: 'Lexeme' },
-  times_right: { type: Number, default: 0 },
-  times_wrong: { type: Number, default: 0 },
-  progress: { type: Number, default: 0 },
-  last_learnt: Date
-});
-
 const UserSchema = new mongoose.Schema({
   name: { type: String, required: true },
   level: { type: Number, default: 10 },
   newbie: { type: Boolean, default: true },
   createdAt: { type: Date, default: Date.now },
   updatedAt: Date,
-  lexemes: [ UserLexemeSchema ]
+  lexemes: [ {
+    lexeme: { type: mongoose.Schema.Types.ObjectId, ref: 'Lexeme' },
+    correctAnswers: { type: Number, default: 0 },
+    wrongAnswers: { type: Number, default: 0 },
+    progress: { type: Number, default: 1 },
+    lastLearnt: Date
+  } ]
 });
 
 UserSchema.method('update', function(updates, callback) {
@@ -59,7 +57,7 @@ UserSchema.method('update', function(updates, callback) {
 UserSchema.method('updateProgress', function(update, callback) {
   const lexemes = [...this.lexemes].map( lexeme => {
     if ( String(lexeme.id) === String(update.id) ) {
-      update.last_learnt = Date.now();
+      update.lastLearnt = Date.now();
       return update;
     } else return lexeme;
   });
