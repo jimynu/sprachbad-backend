@@ -15,11 +15,13 @@ const port = process.env.PORT || 3030;
 app.listen( port, () => console.log(`${Date()}
 Listening on port ${port}.`) );
 
+app.use( cors() ); // erlaubt alles
+
 app.use( logger('dev') );
 app.use( jsonParser() );
 
-app.use ( '/api/lexemes', cors(), lexemeRoutes ); // cors() erlaubt alles
-app.use ( '/api/user', cors(), userRoutes ); // cors() erlaubt alles
+app.use ( '/api/lexemes', lexemeRoutes );
+app.use ( '/api/user', userRoutes );
 
 
 
