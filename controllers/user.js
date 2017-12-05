@@ -83,7 +83,30 @@ router.get( '/:id/lexemes/:quantity', (req, res, next) => {
     .populate('lexemes.lexeme')
     .then( ({ lexemes }) => {
       // select questions, later based on (1) level of control, (2) last learned
-      return res.json(lexemes);
+
+      const filteredLexemes = lexemes.map( userLexeme => {
+        // select tasks: (1) task level should fit user level
+        const tasksFittingLevel = userLexeme.lexeme.tasks.filter( task => {
+          return task.level === req.user.level;
+        });
+
+        // just one task –> randomise (for now)
+        const randomNo = Math.floor( Math.random() * tasksFittingLevel.length );
+        const task = tasksFittingLevel[randomNo];
+
+        if ( !task.a ) task.a = userLexeme.lexeme.lexeme;
+
+        // return new object
+        return {
+          lexemeId: userLexeme.lexeme._id,
+          lexeme: userLexeme.lexeme.lexeme,
+          task: task,
+          correctAnswers: userLexeme.correctAnswers,
+          wrongAnswers: userLexeme.wrongAnswers,
+        };
+      });
+
+      return res.json(filteredLexemes);
     })
     .catch( error => next(error) );
 });
