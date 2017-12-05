@@ -15,7 +15,7 @@ const port = process.env.PORT || 3030;
 app.listen( port, () => console.log(`${Date()}
 Listening on port ${port}.`) );
 
-app.use( cors() ); // erlaubt alles
+app.use( cors() ); // permits all requests
 
 app.use( logger('dev') );
 app.use( jsonParser() );
