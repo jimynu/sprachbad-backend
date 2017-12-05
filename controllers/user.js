@@ -33,9 +33,9 @@ router.put( '/:id', (req, res, next) => {
   const updateData = {};
 
   // only pass on qualifying values
-  if ( [10, 20, 30].indexOf(updateData.level) !== -1 ) updateData.level = level;
-  if ( typeof updateData.newbie === "boolean" ) updateData.newbie = newbie;
-  if ( updateData.name ) updateData.name = name;
+  if ( [10, 20, 30].indexOf(level) !== -1 ) updateData.level = level;
+  if ( typeof newbie === "boolean" ) updateData.newbie = newbie;
+  if ( name ) updateData.name = name;
 
   req.user.update( updateData, (error, result) => {
     if ( error ) return next(error);
@@ -53,6 +53,77 @@ router.get( '/:id/lexemes', (req, res, next) => {
 });
 
 
+router.put( '/:id/lexemes/add/:lexemeId', (req, res, next) => {
+
+  const lexemeIdToAdd = req.params.lexemeId;
+
+  User.findById( req.user._id )
+    .then( user => {
+      const lexeme = user.lexemes.find( ({ lexeme: id }) => String(id) === lexemeIdToAdd );
+
+      if(lexeme) {
+        const err = new Error( 'Lexeme is already in learning list.' );
+        err.status = 409;
+        return next(err);
+      }
+
+      if(!lexeme) {
+        req.user.update( { lexemes: [...user.lexemes, { lexeme: lexemeIdToAdd }] }, (error, result) => {
+          if ( error ) return next(error);
+
+          let savedLexeme = result.lexemes.find( ({ lexeme: id }) => String(id) === lexemeIdToAdd );
+
+          Lexeme.findById( lexemeIdToAdd )
+            .then( foundLexeme => {
+              const returnLexeme = {
+                lexeme: {
+                  lexeme: foundLexeme.lexeme,
+                  _id: foundLexeme._id },
+                _id: savedLexeme._id,
+                progress: 1,
+                wrongAnswers: 0,
+                correctAnswers: 0
+                };
+
+              res.json(returnLexeme)
+            })
+            .catch( error => next(error) );
+        });
+      }
+    })
+    .catch( error => next(error) );
+});
+
+
+router.put( '/:id/lexemes/remove/:lexemeId', (req, res, next) => {
+
+  const lexemeIdToRemove = req.params.lexemeId;
+
+  User.findById( req.user._id )
+    .then( user => {
+      const lexeme = user.lexemes.find( ({ lexeme: id }) => String(id) === lexemeIdToRemove );
+
+      if(!lexeme) {
+        const err = new Error( 'Lexeme is not in learning list.' );
+        err.status = 409;
+        return next(err);
+      }
+
+      if(lexeme) {
+        const lexemesFiltered = user.lexemes
+          .filter( ({ lexeme: lexemeId}) => lexemeIdToRemove.indexOf(String(lexemeId)) === -1 );
+
+        req.user.update( { lexemes: [...lexemesFiltered] }, (error, result) => {
+          if ( error ) return next(error);
+          res.json(lexemeIdToRemove);
+        });
+      }
+    })
+    .catch( error => next(error) );
+});
+
+
+// batch add/remove -- body syntax: { add: [...ids], remove: [...ids] }
 router.put( '/:id/lexemes', (req, res, next) => {
 
   User.findById( req.user._id )
@@ -70,12 +141,14 @@ router.put( '/:id/lexemes', (req, res, next) => {
       // persist in DB, deliver response
       req.user.update( { lexemes: [...lexemesFiltered, ...lexemesToAdd] }, (error, result) => {
         if ( error ) return next(error);
-        res.json(result); // just "res.status(200).send()" ?
+        res.json(result); // unpopulated! just "res.status(200).send()" ?
       });
 
     })
     .catch( error => next(error) );
 });
+
+
 
 
 router.get( '/:id/lexemes/:quantity', (req, res, next) => {
@@ -84,26 +157,30 @@ router.get( '/:id/lexemes/:quantity', (req, res, next) => {
     .then( ({ lexemes }) => {
       // select questions, later based on (1) level of control, (2) last learned
 
-      const filteredLexemes = lexemes.map( userLexeme => {
-        // select tasks: (1) task level should fit user level
-        const tasksFittingLevel = userLexeme.lexeme.tasks.filter( task => {
-          return task.level === req.user.level;
-        });
+      const filteredLexemes = lexemes
+        .filter( userLexeme => { // check if there is at least 1 task for requested level
+          return userLexeme.lexeme.tasks.find( task => task.level === req.user.level ) !== undefined;
+        })
+        .map( userLexeme => {
+          // select tasks: (1) task level should fit user level
+          const tasksFittingLevel = userLexeme.lexeme.tasks.filter( task => {
+            return task.level === req.user.level;
+          });
 
-        // just one task –> randomise (for now)
-        const randomNo = Math.floor( Math.random() * tasksFittingLevel.length );
-        const task = tasksFittingLevel[randomNo];
+          // just one task –> randomise (for now)
+          const randomNo = Math.floor( Math.random() * tasksFittingLevel.length );
+          const task = tasksFittingLevel[randomNo];
 
-        if ( !task.a ) task.a = userLexeme.lexeme.lexeme;
+          if ( !task.a ) task.a = userLexeme.lexeme.lexeme;
 
-        // return new object
-        return {
-          lexemeId: userLexeme.lexeme._id,
-          lexeme: userLexeme.lexeme.lexeme,
-          task: task,
-          correctAnswers: userLexeme.correctAnswers,
-          wrongAnswers: userLexeme.wrongAnswers,
-        };
+          // return new object
+          return {
+            lexemeId: userLexeme.lexeme._id,
+            lexeme: userLexeme.lexeme.lexeme,
+            task: task,
+            correctAnswers: userLexeme.correctAnswers,
+            wrongAnswers: userLexeme.wrongAnswers,
+          };
       });
 
       return res.json(filteredLexemes);
