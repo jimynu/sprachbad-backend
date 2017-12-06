@@ -47,8 +47,26 @@ router.put( '/:id', (req, res, next) => {
 
 router.get( '/:id/lexemes', (req, res, next) => {
   User.findById( req.user._id ) // get again b/c in req.user the lexemes are stripped off
-    .populate('lexemes.lexeme', 'lexeme')
-    .then( ({ lexemes }) => res.json(lexemes) )
+    .populate('lexemes.lexeme', 'lexeme tasks')
+    .then( ({ lexemes }) => {
+      // check which levels have tasks
+      const lexemesWithTaskSummary = lexemes.map( lexeme => {
+        const { tasks: lexTasks, lexeme: lexLexeme, _id: lexID } = lexeme.lexeme;
+        const level10tasks = !!lexTasks.find( task => task.level === 10 );
+        const level20tasks = !!lexTasks.find( task => task.level === 20 );
+        const level30tasks = !!lexTasks.find( task => task.level === 30 );
+
+        const { correctAnswers, wrongAnswers, progress, lastLearnt, _id } = lexeme;
+        return { correctAnswers, wrongAnswers, progress, lastLearnt, _id, lexeme: {
+          level10tasks,
+          level20tasks,
+          level30tasks,
+          lexeme: lexLexeme,
+          _id: lexID
+        }};
+      })
+      res.json(lexemesWithTaskSummary)
+    })
     .catch( error => next(error) );
 });
 
