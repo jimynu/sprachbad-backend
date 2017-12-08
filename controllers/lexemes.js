@@ -28,8 +28,25 @@ router.get( '/', (req, res, next) => {
 
 // get all lexemes (for now), just lexeme + id (–> selecting)
 router.get( '/summary', (req, res, next) => {
-  Lexeme.find({}, 'lexeme' ) // get only "lexeme" field and "id" (always there)
-    .then( lexemes => res.json(lexemes) )
+  Lexeme.find({}, 'lexeme tasks' ) // get only "lexeme" field and "id" (always there)
+    .then( ( lexemes ) => {
+      // check which levels have tasks
+      const lexemesWithTaskSummary = lexemes.map( lexeme => {
+        const { tasks: lexTasks, lexeme: lexLexeme, _id: lexID } = lexeme;
+        const level10tasks = lexTasks.some( task => task.level === 10 );
+        const level20tasks = lexTasks.some( task => task.level === 20 );
+        const level30tasks = lexTasks.some( task => task.level === 30 );
+
+        return {
+          level10tasks,
+          level20tasks,
+          level30tasks,
+          lexeme: lexLexeme,
+          _id: lexID
+        };
+      })
+      res.json(lexemesWithTaskSummary)
+    })
     .catch( error => next(error) );
 });
 
