@@ -52,9 +52,9 @@ router.get( '/:id/lexemes', (req, res, next) => {
       // check which levels have tasks
       const lexemesWithTaskSummary = lexemes.map( lexeme => {
         const { tasks: lexTasks, lexeme: lexLexeme, _id: lexID } = lexeme.lexeme;
-        const level10tasks = !!lexTasks.find( task => task.level === 10 );
-        const level20tasks = !!lexTasks.find( task => task.level === 20 );
-        const level30tasks = !!lexTasks.find( task => task.level === 30 );
+        const level10tasks = lexTasks.some( task => task.level === 10 );
+        const level20tasks = lexTasks.some( task => task.level === 20 );
+        const level30tasks = lexTasks.some( task => task.level === 30 );
 
         const { correctAnswers, wrongAnswers, progress, lastLearnt, _id } = lexeme;
         return { correctAnswers, wrongAnswers, progress, lastLearnt, _id, lexeme: {
@@ -93,9 +93,13 @@ router.put( '/:id/lexemes/add/:lexemeId', (req, res, next) => {
 
           Lexeme.findById( lexemeIdToAdd )
             .then( foundLexeme => {
+              const tasks = foundLexeme.tasks;
               const returnLexeme = {
                 lexeme: {
                   lexeme: foundLexeme.lexeme,
+                  level10tasks: tasks.some( task => task.level === 10 ),
+                  level20tasks: tasks.some( task => task.level === 20 ),
+                  level30tasks: tasks.some( task => task.level === 30 ),
                   _id: foundLexeme._id }, //or savedLexeme.lexeme (sic!)
                 _id: savedLexeme._id,
                 progress: 1,
