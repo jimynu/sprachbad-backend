@@ -1,6 +1,12 @@
 const express = require('express');
 const router = express.Router();
+const jwt = require('jsonwebtoken');
+require('dotenv').config();
+
+const User = require('../models').User;
+const Role = require('../models').Role;
 const Lexeme = require('../models').Lexeme;
+const Token = require('../models').Token;
 
 
 // "id" parameter –> params
@@ -17,13 +23,6 @@ router.param( 'id', (req, res, next, id) => {
   });
 });
 
-
-// get all lexemes (for now), full data (–> editing)
-router.get( '/', (req, res, next) => {
-  Lexeme.find({})
-    .then( lexemes => res.json(lexemes) )
-    .catch( error => next(error) );
-});
 
 
 // get all lexemes (for now), just lexeme + id (–> selecting)
@@ -55,6 +54,46 @@ router.get( '/summary', (req, res, next) => {
 router.get( '/:id', (req, res, next) => {
   res.json(req.lexeme);
 });
+
+
+
+
+/*** ROUTES BELOW NEED ADMIN ACCESS ***/
+
+// check token
+router.use( (req, res, next) => {
+  const sentToken = req.headers.authorization.substring(7); // cut off "Bearer "
+  jwt.verify(sentToken, process.env.JWT_SECRET, (err, {id: tokenUserId}) => {
+    Token.findOne({ userId: tokenUserId })
+      .then( (foundToken, error) => {
+        if ( sentToken !== foundToken.token ) {
+          error = new Error( 'Token invalid' );
+          error.status = 401;
+          return next(error)
+        }
+        Role.findOne({ userId: tokenUserId })
+          .then( ( role, error ) => {
+            if ( !role || role.role !== 'admin' ) {
+              error = new Error( 'Admin privileges needed' );
+              error.status = 401;
+              return next(error)
+            }
+
+            return next();
+          })
+          .catch( error => next(error) );
+      })
+      .catch( error => next(error) );
+  });
+})
+
+// get all lexemes, full data (–> editing)
+router.get( '/', (req, res, next) => {
+  Lexeme.find({})
+    .then( lexemes => res.json(lexemes) )
+    .catch( error => next(error) );
+});
+
 
 
 // submit new lexeme

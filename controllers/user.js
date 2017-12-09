@@ -1,17 +1,39 @@
 const express = require('express');
 const router = express.Router();
+const jwt = require('jsonwebtoken');
+require('dotenv').config();
+
 const User = require('../models').User;
 const Lexeme = require('../models').Lexeme;
+const Token = require('../models').Token;
 
+
+// check token
+router.use( (req, res, next) => {
+  const sentToken = req.headers.authorization.substring(7); // cut off "Bearer "
+  jwt.verify(sentToken, process.env.JWT_SECRET, (err, {id: tokenUserId}) => {
+    Token.findOne({ userId: tokenUserId })
+      .then( (foundToken, error) => {
+        if ( sentToken !== foundToken.token ) {
+          error = new Error( 'Token invalid' );
+          error.status = 401;
+          return next(error)
+        }
+        req.tokenUserId = tokenUserId;
+        return next();
+      })
+      .catch( error => next(error) );
+  });
+})
 
 
 // "id" parameter –> params
 router.param( 'id', (req, res, next, id) => {
-  User.findById( req.params.id, 'name newbie level' ) // "select" fields (+id)
+  User.findById( req.tokenUserId, 'name newbie level' ) // "select" fields (+id) --- user id in URL path is ignored at this moment
     .then( user => {
       if ( !user ) {
         error = new Error( 'Not found' );
-        error.status = 404;
+        error.status = 404; // 401?
         return next(error)
       }
       req.user = user;
@@ -21,6 +43,8 @@ router.param( 'id', (req, res, next, id) => {
 });
 
 
+
+/*** ROUTES ***/
 
 router.get( '/:id', (req, res, next) => {
   res.json(req.user);

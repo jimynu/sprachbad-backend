@@ -34,6 +34,7 @@ LexemeSchema.method('update', function(updates, callback) {
 
 const UserSchema = new mongoose.Schema({
   name: { type: String, required: true },
+  password: { type: String, required: true },
   level: { type: Number, default: 10 },
   newbie: { type: Boolean, default: true },
   createdAt: { type: Date, default: Date.now },
@@ -47,8 +48,9 @@ const UserSchema = new mongoose.Schema({
   } ]
 });
 
+
 UserSchema.method('update', function(updates, callback) {
-  const { _id: _, ...rest } = updates;
+  const { _id: _, password: _password, ...rest } = updates; // password can't be changed at the moment
   Object.assign(this, rest, { updatedAt: Date.now() } );
   this.save(callback);
 });
@@ -66,9 +68,34 @@ UserSchema.method('updateProgress', function(update, callback) {
 });
 
 
+
+const TokenSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', unique: true },
+  token: String
+});
+
+TokenSchema.method('replace', function(token, callback) {
+  Object.assign(this, { token } );
+  console.log(this);
+  this.save(callback);
+});
+
+
+
+const RoleSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', unique: true },
+  role: String
+});
+
+
+
 // create collections
 const Lexeme = mongoose.model('Lexeme', LexemeSchema);
 const User = mongoose.model('User', UserSchema);
+const Token = mongoose.model('Token', TokenSchema);
+const Role = mongoose.model('Role', RoleSchema);
 
 module.exports.Lexeme = Lexeme;
 module.exports.User = User;
+module.exports.Token = Token;
+module.exports.Role = Role;
