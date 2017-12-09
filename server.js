@@ -3,6 +3,7 @@ const logger = require('morgan');
 const cors = require('cors');
 const jsonParser = require('body-parser').json;
 
+const loginRoutes = require('./controllers/login');
 const lexemeRoutes = require('./controllers/lexemes');
 const userRoutes = require('./controllers/user');
 const db = require('./db');
@@ -10,6 +11,12 @@ const db = require('./db');
 const app = express();
 const port = process.env.PORT || 3030;
 
+const expressJWT = require('express-jwt');
+const jwt = require('jsonwebtoken');
+const User = require('./models').User;
+const Token = require('./models').Token;
+const bcrypt = require('bcryptjs');
+require('dotenv').config();
 
 
 app.listen( port, () => console.log(`${Date()}
@@ -19,7 +26,9 @@ app.use( cors() ); // permits all requests
 
 app.use( logger('dev') );
 app.use( jsonParser() );
+app.use( expressJWT({ secret: process.env.JWT_SECRET }).unless({path: ['/api/login', '/api/lexemes/summary']}) );
 
+app.use ( '/api/login', loginRoutes );
 app.use ( '/api/lexemes', lexemeRoutes );
 app.use ( '/api/user', userRoutes );
 
