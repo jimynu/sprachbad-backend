@@ -28,6 +28,11 @@ app.use( logger('dev') );
 app.use( jsonParser() );
 app.use( expressJWT({ secret: process.env.JWT_SECRET }).unless({path: ['/api/login', '/api/lexemes/summary']}) );
 
+app.use( (req, res, next) => {
+  console.log(req);
+  next();
+});
+
 app.use ( '/api/login', loginRoutes );
 app.use ( '/api/lexemes', lexemeRoutes );
 app.use ( '/api/user', userRoutes );
