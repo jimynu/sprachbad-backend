@@ -23,6 +23,7 @@ app.listen( port, () => console.log(`${Date()}
 Listening on port ${port}.`) );
 
 app.use( cors() ); // permits all requests
+app.set('trust proxy', true); // trusts the heroku proxy and saves origin ip in req.ip
 
 app.use( logger('dev') );
 app.use( jsonParser() );
