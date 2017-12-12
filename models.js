@@ -76,7 +76,6 @@ const TokenSchema = new mongoose.Schema({
 
 TokenSchema.method('replace', function(token, callback) {
   Object.assign(this, { token } );
-  console.log(this);
   this.save(callback);
 });
 
@@ -89,13 +88,28 @@ const RoleSchema = new mongoose.Schema({
 
 
 
+const BlacklistedIpSchema = new mongoose.Schema({
+  ip: String,
+  count: { type: Number, default: 1 },
+  lastTry: { type: Date, default: Date.now }
+});
+
+BlacklistedIpSchema.method('saveTemp', function(ip, callback) {
+  Object.assign(this, { lastTry: Date.now(), count: this.count+1 } );
+  this.save(callback);
+});
+
+
+
 // create collections
 const Lexeme = mongoose.model('Lexeme', LexemeSchema);
 const User = mongoose.model('User', UserSchema);
 const Token = mongoose.model('Token', TokenSchema);
 const Role = mongoose.model('Role', RoleSchema);
+const BlacklistedIp = mongoose.model('BlacklistedIp', BlacklistedIpSchema);
 
 module.exports.Lexeme = Lexeme;
 module.exports.User = User;
 module.exports.Token = Token;
 module.exports.Role = Role;
+module.exports.BlacklistedIp = BlacklistedIp;
