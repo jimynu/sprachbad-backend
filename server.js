@@ -23,14 +23,14 @@ app.listen( port, () => console.log(`${Date()}
 Listening on port ${port}.`) );
 
 app.use( cors() ); // permits all requests
-app.set('trust proxy', true); // trusts the heroku proxy and saves origin ip in req.ip
+app.enable('trust proxy'); // trusts the heroku proxy and saves origin ip in req.ip
 
 app.use( logger('dev') );
 app.use( jsonParser() );
 app.use( expressJWT({ secret: process.env.JWT_SECRET }).unless({path: ['/api/login', '/api/lexemes/summary']}) );
 
 app.use( (req, res, next) => {
-  console.log(req);
+  console.log(req.ip);
   next();
 });
 
