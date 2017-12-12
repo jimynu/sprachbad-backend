@@ -3,6 +3,7 @@ const logger = require('morgan');
 const cors = require('cors');
 const jsonParser = require('body-parser').json;
 
+const signupRoutes = require('./controllers/signup');
 const loginRoutes = require('./controllers/login');
 const lexemeRoutes = require('./controllers/lexemes');
 const userRoutes = require('./controllers/user');
@@ -27,13 +28,9 @@ app.enable('trust proxy'); // trusts the heroku proxy and saves origin ip in req
 
 app.use( logger('dev') );
 app.use( jsonParser() );
-app.use( expressJWT({ secret: process.env.JWT_SECRET }).unless({path: ['/api/login', '/api/lexemes/summary']}) );
+app.use( expressJWT({ secret: process.env.JWT_SECRET }).unless({path: ['/api/login', '/api/signup', '/api/lexemes/summary']}) );
 
-app.use( (req, res, next) => {
-  console.log(req.ip);
-  next();
-});
-
+app.use ( '/api/signup', signupRoutes );
 app.use ( '/api/login', loginRoutes );
 app.use ( '/api/lexemes', lexemeRoutes );
 app.use ( '/api/user', userRoutes );
