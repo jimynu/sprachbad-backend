@@ -208,12 +208,12 @@ router.get( '/:id/lexemes/:quantity', (req, res, next) => {
           return !!userLexeme.lexeme.tasks.find( task => task.level === req.user.level );
         })
         .map( userLexeme => {
-          // select tasks: (1) task level should fit user level
+          // select tasks: task level should fit user level
           const tasksFittingLevel = userLexeme.lexeme.tasks.filter( task => {
             return task.level === req.user.level;
           });
 
-          // just one task –> randomise (for now)
+          // just one task –> randomise
           const randomNo = Math.floor( Math.random() * tasksFittingLevel.length );
           const task = tasksFittingLevel[randomNo];
 
@@ -228,6 +228,15 @@ router.get( '/:id/lexemes/:quantity', (req, res, next) => {
             wrongAnswers: userLexeme.wrongAnswers,
           };
       });
+
+      // shuffle (Fisher-Yates)
+      let remaining = filteredLexemes.length, currentElement, randomElement;
+      while (remaining) {
+        randomElement = Math.floor(Math.random() * remaining--);
+        currentElement = filteredLexemes[remaining];
+        filteredLexemes[remaining] = filteredLexemes[randomElement];
+        filteredLexemes[randomElement] = currentElement;
+      }
 
       return res.json(filteredLexemes);
     })
