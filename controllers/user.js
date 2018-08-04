@@ -200,10 +200,9 @@ router.put( '/:id/lexemes', (req, res, next) => {
 router.get( '/:id/lexemes/:quantity', (req, res, next) => {
   User.findById( req.user._id )
     .populate('lexemes.lexeme')
-    .then( ({ lexemes }) => {
-      // select questions, later based on (1) level of control, (2) last learned
-
-      const filteredLexemes = lexemes
+    .then( ({ lexemes }) => {      
+      // select questions
+      let filteredLexemes = lexemes
         .filter( userLexeme => { // check if there is at least 1 task for requested level
           return !!userLexeme.lexeme.tasks.find( task => task.level === req.user.level );
         })
@@ -226,8 +225,31 @@ router.get( '/:id/lexemes/:quantity', (req, res, next) => {
             task: task,
             correctAnswers: userLexeme.correctAnswers,
             wrongAnswers: userLexeme.wrongAnswers,
+            lastLearnt: userLexeme.lastLearnt,
+            progress: userLexeme.progress,
           };
-      });
+      });      
+
+      // if there are more than {quantity}, select {quantity} based on
+      // - level of control (primary criterion)
+      // - last learned (secondary)
+      const quantity = req.params.quantity > 0 ? req.params.quantity : 10;
+      if (filteredLexemes.length > quantity) {
+        // criterion 1
+        const progress = filteredLexemes.map(({progress}) => progress).sort();
+        const threshold = progress[quantity-1];
+        // lexemes with lower progress get in anyway
+        const lexemesBelowThreshold = filteredLexemes.filter(({progress}) => progress < threshold);
+
+        // there might be more lexemes than needed with progress === threshold -> adding criterion 2, then random
+        const lexemesAtThreshold = filteredLexemes
+          .filter(({progress}) => progress === threshold)
+          .sort(({lastLearnt: a}, {lastLearnt: b}) => a < b); // sorting more recently learnt ones first, undefined (never learnt) last
+        // how many are needed? (negative to slice from tail)
+        const count = lexemesBelowThreshold.length - quantity;
+
+        filteredLexemes = [...lexemesBelowThreshold, ...lexemesAtThreshold.slice(count)]
+      }
 
       // shuffle (Fisher-Yates)
       let remaining = filteredLexemes.length, currentElement, randomElement;
